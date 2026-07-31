@@ -1,0 +1,542 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cartoon Wordle</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Comic Sans MS', 'Trebuchet MS', cursive, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+        }
+
+        .container {
+            background: white;
+            border-radius: 30px;
+            padding: 40px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            max-width: 500px;
+            width: 100%;
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+
+        .title {
+            font-size: 3.5em;
+            background: linear-gradient(45deg, #ff6b6b, #ffd93d, #6bcf7f, #4d96ff);
+            background-size: 300% 300%;
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            animation: gradientShift 3s ease infinite;
+            margin-bottom: 10px;
+        }
+
+        @keyframes gradientShift {
+            0%, 100% { background-position: 0% 50%; }
+            50% { background-position: 100% 50%; }
+        }
+
+        .subtitle {
+            font-size: 1.1em;
+            color: #666;
+        }
+
+        .game-board {
+            display: grid;
+            grid-template-columns: repeat(5, 1fr);
+            gap: 8px;
+            margin-bottom: 30px;
+            min-height: 300px;
+        }
+
+        .guess-row {
+            display: grid;
+            grid-template-columns: repeat(5, 1fr);
+            gap: 8px;
+            margin-bottom: 8px;
+        }
+
+        .tile {
+            aspect-ratio: 1;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.8em;
+            font-weight: bold;
+            border: 3px solid #ddd;
+            border-radius: 12px;
+            background: white;
+            text-transform: uppercase;
+            cursor: default;
+            transition: all 0.2s;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+
+        .tile.filled {
+            border-color: #667eea;
+            background: #f0f4ff;
+        }
+
+        .tile.green {
+            background: #6bcf7f;
+            border-color: #52b788;
+            color: white;
+            transform: scale(1.05) rotateZ(5deg);
+            box-shadow: 0 6px 12px rgba(107, 207, 127, 0.4);
+        }
+
+        .tile.yellow {
+            background: #ffd93d;
+            border-color: #ffb700;
+            color: white;
+            transform: scale(1.05) rotateZ(-5deg);
+            box-shadow: 0 6px 12px rgba(255, 217, 61, 0.4);
+        }
+
+        .tile.gray {
+            background: #ccc;
+            border-color: #999;
+            color: white;
+            transform: scale(0.95);
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+
+        .input-area {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+
+        input[type="text"] {
+            flex: 1;
+            padding: 12px 16px;
+            font-size: 1.1em;
+            border: 3px solid #667eea;
+            border-radius: 12px;
+            font-family: inherit;
+            text-transform: uppercase;
+        }
+
+        input[type="text"]:focus {
+            outline: none;
+            border-color: #764ba2;
+            box-shadow: 0 0 0 4px rgba(118, 75, 162, 0.1);
+        }
+
+        button {
+            padding: 12px 24px;
+            font-size: 1.1em;
+            font-family: inherit;
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            color: white;
+            border: none;
+            border-radius: 12px;
+            cursor: pointer;
+            font-weight: bold;
+            transition: all 0.2s;
+            box-shadow: 0 4px 8px rgba(102, 126, 234, 0.3);
+        }
+
+        button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 12px rgba(102, 126, 234, 0.4);
+        }
+
+        button:active {
+            transform: translateY(0);
+        }
+
+        .stats {
+            display: flex;
+            justify-content: space-around;
+            gap: 15px;
+            margin-bottom: 20px;
+            text-align: center;
+        }
+
+        .stat {
+            background: #f5f5f5;
+            padding: 15px;
+            border-radius: 12px;
+            flex: 1;
+        }
+
+        .stat-label {
+            font-size: 0.9em;
+            color: #888;
+            margin-bottom: 5px;
+        }
+
+        .stat-value {
+            font-size: 1.8em;
+            font-weight: bold;
+            color: #667eea;
+        }
+
+        .modal {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.6);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 1000;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.3s;
+        }
+
+        .modal.show {
+            opacity: 1;
+            pointer-events: all;
+        }
+
+        .modal-content {
+            background: white;
+            padding: 40px;
+            border-radius: 30px;
+            text-align: center;
+            max-width: 500px;
+            max-height: 90vh;
+            overflow-y: auto;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            transform: scale(0.9);
+            transition: transform 0.3s;
+        }
+
+        .modal.show .modal-content {
+            transform: scale(1);
+        }
+
+        .modal-title {
+            font-size: 2.5em;
+            margin-bottom: 15px;
+        }
+
+        .modal-title.win {
+            color: #6bcf7f;
+        }
+
+        .modal-title.lose {
+            color: #ff6b6b;
+        }
+
+        .modal-word {
+            font-size: 1.3em;
+            margin: 15px 0;
+            font-weight: bold;
+            color: #667eea;
+        }
+
+        .modal-message {
+            font-size: 1.1em;
+            color: #666;
+            margin-bottom: 25px;
+        }
+
+        .keyboard {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(30px, 1fr));
+            gap: 4px;
+        }
+
+        .key {
+            padding: 8px;
+            background: #f0f0f0;
+            border: 2px solid #ddd;
+            border-radius: 8px;
+            font-size: 0.9em;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.1s;
+        }
+
+        .key:hover {
+            background: #e0e0e0;
+        }
+
+        .key.used {
+            opacity: 0.5;
+        }
+
+        .message {
+            text-align: center;
+            min-height: 20px;
+            margin-bottom: 10px;
+            font-weight: bold;
+        }
+
+        .message.error {
+            color: #ff6b6b;
+        }
+
+        .message.success {
+            color: #6bcf7f;
+        }
+
+        .attempts-left {
+            text-align: center;
+            font-size: 1.1em;
+            color: #667eea;
+            font-weight: bold;
+            margin-top: 15px;
+        }
+
+        .confetti {
+            position: fixed;
+            pointer-events: none;
+            font-size: 2em;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <div class="title">🎨 WORDLE</div>
+            <div class="subtitle">Guess the word in 6 tries!</div>
+        </div>
+
+        <div class="stats">
+            <div class="stat">
+                <div class="stat-label">Attempts Left</div>
+                <div class="stat-value" id="attempts">6</div>
+            </div>
+            <div class="stat">
+                <div class="stat-label">Wins</div>
+                <div class="stat-value" id="wins">0</div>
+            </div>
+        </div>
+
+        <div class="message" id="message"></div>
+
+        <div class="game-board" id="gameBoard"></div>
+
+        <div class="input-area">
+            <input type="text" id="guessInput" placeholder="Type 5 letters..." maxlength="5">
+            <button onclick="makeGuess()">GUESS</button>
+        </div>
+
+        <div class="attempts-left" id="attemptsDisplay"></div>
+
+        <button onclick="resetGame()" style="width: 100%; margin-top: 10px;">🔄 NEW GAME</button>
+    </div>
+
+    <div class="modal" id="modal">
+        <div class="modal-content">
+            <div class="modal-title" id="modalTitle"></div>
+            <div class="modal-message" id="modalMessage"></div>
+            <div class="modal-word" id="modalWord"></div>
+            <button onclick="resetGame()" style="width: 100%;">Play Again</button>
+        </div>
+    </div>
+
+    <script>
+        const WORD_LIST = [
+            'PIANO', 'HOUSE', 'BEACH', 'PLANT', 'MUSIC',
+            'DANCE', 'SMILE', 'DREAM', 'MAGIC', 'HAPPY',
+            'BREAD', 'CHAIR', 'LIGHT', 'WATER', 'STONE',
+            'PIZZA', 'HAPPY', 'SWEET', 'PARTY', 'GIANT',
+            'SPACE', 'ROBOT', 'FOREST', 'OCEAN', 'CLOUD',
+            'SPORT', 'HEART', 'BRAVE', 'PRIDE', 'SWING'
+        ];
+
+        let secretWord = '';
+        let guesses = [];
+        let gameOver = false;
+        let wins = 0;
+        const maxAttempts = 6;
+
+        function initGame() {
+            secretWord = WORD_LIST[Math.floor(Math.random() * WORD_LIST.length)];
+            guesses = [];
+            gameOver = false;
+            document.getElementById('guessInput').value = '';
+            document.getElementById('message').textContent = '';
+            document.getElementById('modal').classList.remove('show');
+            renderBoard();
+            document.getElementById('guessInput').focus();
+        }
+
+        function renderBoard() {
+            const board = document.getElementById('gameBoard');
+            board.innerHTML = '';
+
+            for (let i = 0; i < maxAttempts; i++) {
+                const row = document.createElement('div');
+                row.className = 'guess-row';
+
+                for (let j = 0; j < 5; j++) {
+                    const tile = document.createElement('div');
+                    tile.className = 'tile';
+
+                    if (i < guesses.length) {
+                        const guess = guesses[i];
+                        const letter = guess[j];
+                        const feedback = getFeedback(guess, j);
+
+                        tile.textContent = letter;
+                        tile.classList.add('filled');
+
+                        if (feedback === 'correct') {
+                            tile.classList.add('green');
+                        } else if (feedback === 'wrong-position') {
+                            tile.classList.add('yellow');
+                        } else {
+                            tile.classList.add('gray');
+                        }
+                    }
+
+                    row.appendChild(tile);
+                }
+
+                board.appendChild(row);
+            }
+
+            updateDisplay();
+        }
+
+        function getFeedback(guess, position) {
+            const letter = guess[position];
+
+            if (secretWord[position] === letter) {
+                return 'correct';
+            } else if (secretWord.includes(letter)) {
+                return 'wrong-position';
+            } else {
+                return 'not-in-word';
+            }
+        }
+
+        function makeGuess() {
+            const input = document.getElementById('guessInput');
+            const guess = input.value.toUpperCase().trim();
+            const message = document.getElementById('message');
+
+            message.textContent = '';
+            message.classList.remove('error', 'success');
+
+            if (gameOver) {
+                message.textContent = '🎮 Game over! Click "NEW GAME" to play again.';
+                message.classList.add('error');
+                return;
+            }
+
+            if (guess.length !== 5) {
+                message.textContent = '✏️ Please enter exactly 5 letters!';
+                message.classList.add('error');
+                return;
+            }
+
+            if (!/^[A-Z]+$/.test(guess)) {
+                message.textContent = '🔤 Only letters allowed!';
+                message.classList.add('error');
+                return;
+            }
+
+            guesses.push(guess);
+            input.value = '';
+
+            renderBoard();
+
+            if (guess === secretWord) {
+                wins++;
+                localStorage.setItem('wordle_wins', wins);
+                gameOver = true;
+                showModal('win', 'Awesome! 🎉', `You guessed "${secretWord}" correctly!`);
+                celebrateWin();
+            } else if (guesses.length === maxAttempts) {
+                gameOver = true;
+                showModal('lose', 'Game Over 😢', `The word was "${secretWord}"`);
+            }
+
+            input.focus();
+        }
+
+        function showModal(type, title, message) {
+            const modal = document.getElementById('modal');
+            const modalTitle = document.getElementById('modalTitle');
+            const modalMessage = document.getElementById('modalMessage');
+
+            modalTitle.textContent = title;
+            modalTitle.className = 'modal-title ' + (type === 'win' ? 'win' : 'lose');
+            modalMessage.textContent = message;
+
+            modal.classList.add('show');
+        }
+
+        function updateDisplay() {
+            const attemptsLeft = maxAttempts - guesses.length;
+            document.getElementById('attempts').textContent = attemptsLeft;
+            document.getElementById('attemptsDisplay').textContent =
+                attemptsLeft > 0 ? `${attemptsLeft} attempt${attemptsLeft === 1 ? '' : 's'} left` : '';
+        }
+
+        function resetGame() {
+            initGame();
+        }
+
+        function celebrateWin() {
+            const emojis = ['🎉', '✨', '🌟', '💫', '🎊', '🎈', '🏆'];
+            for (let i = 0; i < 20; i++) {
+                setTimeout(() => {
+                    const confetti = document.createElement('div');
+                    confetti.className = 'confetti';
+                    confetti.textContent = emojis[Math.floor(Math.random() * emojis.length)];
+                    confetti.style.left = Math.random() * 100 + '%';
+                    confetti.style.top = '-20px';
+                    confetti.style.animation = `fall ${2 + Math.random() * 1}s linear forwards`;
+                    document.body.appendChild(confetti);
+
+                    setTimeout(() => confetti.remove(), 3000);
+                }, i * 30);
+            }
+        }
+
+        const style = document.createElement('style');
+        style.textContent = `
+            @keyframes fall {
+                to {
+                    transform: translateY(100vh) rotate(360deg);
+                    opacity: 0;
+                }
+            }
+        `;
+        document.head.appendChild(style);
+
+        // Keyboard support
+        document.getElementById('guessInput').addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') {
+                makeGuess();
+            }
+        });
+
+        // Load wins from localStorage
+        const savedWins = localStorage.getItem('wordle_wins');
+        if (savedWins) {
+            wins = parseInt(savedWins);
+            document.getElementById('wins').textContent = wins;
+        }
+
+        // Initialize game
+        initGame();
+    </script>
+</body>
+</html>
