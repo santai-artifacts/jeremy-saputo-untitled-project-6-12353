@@ -220,6 +220,43 @@
             box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
             transform: scale(0.9);
             transition: transform 0.3s;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        .modal-tiles {
+            display: grid;
+            grid-template-columns: repeat(5, 1fr);
+            gap: 8px;
+            margin: 20px 0;
+        }
+
+        .modal-tile {
+            width: 50px;
+            height: 50px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.5em;
+            font-weight: bold;
+            border-radius: 8px;
+            color: white;
+        }
+
+        .modal-tile.green {
+            background: #6bcf7f;
+            border: 2px solid #52b788;
+        }
+
+        .modal-tile.yellow {
+            background: #ffd93d;
+            border: 2px solid #ffb700;
+        }
+
+        .modal-tile.gray {
+            background: #ccc;
+            border: 2px solid #999;
         }
 
         .modal.show .modal-content {
@@ -343,6 +380,7 @@
         <div class="modal-content">
             <div class="modal-title" id="modalTitle"></div>
             <div class="modal-message" id="modalMessage"></div>
+            <div class="modal-tiles" id="modalTiles"></div>
             <div class="modal-word" id="modalWord"></div>
             <button onclick="resetGame()" style="width: 100%;">Play Again</button>
         </div>
@@ -474,10 +512,31 @@
             const modal = document.getElementById('modal');
             const modalTitle = document.getElementById('modalTitle');
             const modalMessage = document.getElementById('modalMessage');
+            const modalTiles = document.getElementById('modalTiles');
 
             modalTitle.textContent = title;
             modalTitle.className = 'modal-title ' + (type === 'win' ? 'win' : 'lose');
             modalMessage.textContent = message;
+
+            // Render final guess tiles
+            modalTiles.innerHTML = '';
+            const lastGuess = guesses[guesses.length - 1];
+            for (let j = 0; j < 5; j++) {
+                const tile = document.createElement('div');
+                tile.className = 'modal-tile';
+                tile.textContent = lastGuess[j];
+
+                const feedback = getFeedback(lastGuess, j);
+                if (feedback === 'correct') {
+                    tile.classList.add('green');
+                } else if (feedback === 'wrong-position') {
+                    tile.classList.add('yellow');
+                } else {
+                    tile.classList.add('gray');
+                }
+
+                modalTiles.appendChild(tile);
+            }
 
             modal.classList.add('show');
         }
